@@ -1,0 +1,7 @@
+data_path: "data/"
+embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+llm_model: "openai/gpt-oss-20b"
+bm25_weights: 0.5
+vector_weights: 0.5
+chunk_size: 1000
+chunk_overlap: 500

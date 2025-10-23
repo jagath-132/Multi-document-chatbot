@@ -1,0 +1,27 @@
+# Core LangChain ecosystem
+langchain>=0.3.0
+langchain-community>=0.3.0
+langchain-core>=0.3.0
+
+# Embeddings & Vector DB
+faiss-cpu>=1.8.0
+sentence-transformers>=3.0.1
+
+# Text processing & loaders
+unstructured>=0.14.0
+pypdf>=5.0.0
+python-docx>=1.1.2
+docx2txt>=0.8
+pandas>=2.2.2
+openpyxl>=3.1.5
+rank-bm25>=0.2.2
+
+# Web loading
+requests>=2.32.3
+beautifulsoup4>=4.12.3
+
+# Config & Utilities
+PyYAML>=6.0.2
+tqdm>=4.66.4
+
+langchain-groq
