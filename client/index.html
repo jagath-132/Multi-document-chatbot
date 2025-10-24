@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RAG Chatbot</title>
+
+  <!-- ✅ Add Marked.js for Markdown rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f7fc;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      width: 80%;
+      max-width: 800px;
+      margin: 40px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+    }
+    .upload-section {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .chat-section {
+      display: none;
+      flex-direction: column;
+      height: 500px;
+    }
+    .chat-box {
+      flex: 1;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 10px;
+      background: #fafafa;
+      margin-bottom: 10px;
+    }
+    .message {
+      margin: 8px 0;
+      padding: 8px 12px;
+      border-radius: 8px;
+      max-width: 80%;
+      word-wrap: break-word;
+    }
+    .user {
+      background-color: #d1e7dd;
+      align-self: flex-end;
+    }
+    .bot {
+      background-color: #f8d7da;
+      align-self: flex-start;
+    }
+    .input-area {
+      display: flex;
+      gap: 10px;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      background-color: #007bff;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    /* ✅ Optional: Markdown styling */
+    .bot code {
+      background: #eee;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    .bot pre {
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    .bot ul, .bot ol {
+      padding-left: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>📄 RAG Document Chatbot</h2>
+
+    <!-- Upload Section -->
+    <div class="upload-section" id="uploadSection">
+      <h3>Upload Document or Enter URL</h3>
+      <input type="file" id="fileInput" accept=".pdf,.txt,.docx,.csv" /><br /><br />
+      <input
+        type="text"
+        id="urlInput"
+        placeholder="Enter a website URL"
+        style="width: 70%; padding: 8px"
+      />
+      <button onclick="uploadFile()">Upload</button>
+      <p id="uploadStatus"></p>
+    </div>
+
+    <!-- Chat Section -->
+    <div class="chat-section" id="chatSection">
+      <div class="chat-box" id="chatBox"></div>
+      <div class="input-area">
+        <input type="text" id="userMessage" placeholder="Ask your question..." />
+        <button onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const uploadStatus = document.getElementById("uploadStatus");
+    const uploadSection = document.getElementById("uploadSection");
+    const chatSection = document.getElementById("chatSection");
+    const chatBox = document.getElementById("chatBox");
+
+    async function uploadFile() {
+      const fileInput = document.getElementById("fileInput");
+      const urlInput = document.getElementById("urlInput");
+      const formData = new FormData();
+
+      if (fileInput.files.length > 0) {
+        formData.append("file", fileInput.files[0]);
+      } else if (urlInput.value.trim() !== "") {
+        formData.append("source", urlInput.value.trim());
+      } else {
+        alert("Please upload a file or enter a URL");
+        return;
+      }
+
+      uploadStatus.textContent = "⏳ Uploading and processing document...";
+
+      try {
+        const response = await fetch("http://127.0.0.1:5000/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const result = await response.json();
+
+        if (result.status === "success") {
+          uploadStatus.textContent = "✅ Document processed successfully!";
+          uploadSection.style.display = "none";
+          chatSection.style.display = "flex";
+        } else {
+          uploadStatus.textContent = "❌ " + result.message;
+        }
+      } catch (error) {
+        uploadStatus.textContent = "❌ Error: " + error.message;
+      }
+    }
+
+    async function sendMessage() {
+      const messageInput = document.getElementById("userMessage");
+      const userMessage = messageInput.value.trim();
+      if (!userMessage) return;
+
+      appendMessage(userMessage, "user");
+      messageInput.value = "";
+
+      appendMessage("⏳ Thinking...", "bot");
+
+      try {
+        const response = await fetch("http://127.0.0.1:5000/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userMessage }),
+        });
+
+        const data = await response.json();
+        chatBox.lastElementChild.remove(); // remove "Thinking..."
+        appendMessage(data.response, "bot");
+      } catch (error) {
+        chatBox.lastElementChild.remove();
+        appendMessage("Error: " + error.message, "bot");
+      }
+    }
+
+    // ✅ Updated to render Markdown safely
+    function appendMessage(text, sender) {
+      const msg = document.createElement("div");
+      msg.classList.add("message", sender);
+
+      if (sender === "bot") {
+        msg.innerHTML = marked.parse(text); // Render markdown as HTML
+      } else {
+        msg.textContent = text;
+      }
+
+      chatBox.appendChild(msg);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  </script>
+</body>
+</html>
